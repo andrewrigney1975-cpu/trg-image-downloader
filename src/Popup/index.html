@@ -85,6 +85,48 @@
         height: 18px;
       }
 
+      .icon-button {
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 30px;
+        height: 30px;
+
+        border-radius: var(--border-radius-md);
+        border: 0;
+
+        transition: var(--transition-background);
+      }
+
+      .icon-button img,
+      .icon-button svg {
+        height: 16px;
+      }
+
+      .icon-button.danger {
+        background: var(--danger);
+        color: var(--foreground-inverse);
+      }
+
+      .icon-button.danger:hover,
+      .icon-button.danger:focus,
+      .icon-button.danger:active {
+        background: var(--danger-light);
+      }
+
+      .download_queue_empty_alert {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex: 1;
+        height: 30px;
+        padding: 0 12px;
+        border-radius: var(--border-radius-md);
+        font-weight: bold;
+        text-align: center;
+      }
+
       .noUi-state-drag {
         cursor: grabbing;
       }

@@ -15,6 +15,11 @@ const tasks = new Set();
 
 chrome.runtime.onMessage.addListener(startDownload);
 chrome.downloads.onDeterminingFilename.addListener(suggestNewFilename);
+chrome.downloads.onChanged.addListener(handleDownloadChanged);
+
+// Download ids started by this extension that haven't finished (or failed) yet.
+/** @type {Set<number>} */
+const activeDownloadIds = new Set();
 
 // NOTE: Don't directly use an `async` function as a listener for `onMessage`:
 // https://stackoverflow.com/a/56483156
@@ -51,9 +56,30 @@ async function downloadImages(/** @type {Task} */ task) {
             console.error(`${image}:`, chrome.runtime.lastError.message);
           }
           task.next();
+        } else {
+          activeDownloadIds.add(downloadId);
         }
         resolve();
       });
+    });
+  }
+}
+
+// https://developer.chrome.com/docs/extensions/reference/downloads/#event-onChanged
+/** @type {Parameters<chrome.downloads.DownloadChangedEvent['addListener']>[0]} */
+function handleDownloadChanged(delta) {
+  if (!activeDownloadIds.has(delta.id)) return;
+  if (!delta.state) return;
+
+  const finished =
+    delta.state.current === 'complete' || delta.state.current === 'interrupted';
+  if (!finished) return;
+
+  activeDownloadIds.delete(delta.id);
+  if (activeDownloadIds.size === 0) {
+    // Notify the popup, if it's open, that every queued download has settled.
+    chrome.runtime.sendMessage({ type: 'downloadQueueEmpty' }, () => {
+      void chrome.runtime.lastError; // Ignore: no popup listening
     });
   }
 }

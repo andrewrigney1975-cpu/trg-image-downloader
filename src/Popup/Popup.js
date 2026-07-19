@@ -31,6 +31,7 @@ const Popup = () => {
   const [linkedImages, setLinkedImages] = useState([]);
   const [selectedImages, setSelectedImages] = useState([]);
   const [visibleImages, setVisibleImages] = useState([]);
+  const activeTabIdRef = useRef(null);
   useEffect(() => {
     // Get images on the page
     chrome.windows.getCurrent((currentWindow) => {
@@ -38,6 +39,7 @@ const Popup = () => {
         { active: true, windowId: currentWindow.id },
         (activeTabs) => {
           tabName = removeSpecialCharacters(activeTabs[0].title);
+          activeTabIdRef.current = activeTabs[0].id;
           chrome.scripting
             .executeScript({
               target: { tabId: activeTabs[0].id, allFrames: true },
@@ -143,6 +145,24 @@ const Popup = () => {
   const [downloadConfirmationIsShown, setDownloadConfirmationIsShown] =
     useState(false);
 
+  const [downloadQueueIsEmpty, setDownloadQueueIsEmpty] = useState(false);
+  useEffect(() => {
+    function handleMessage(message) {
+      if (message && message.type === 'downloadQueueEmpty') {
+        setDownloadQueueIsEmpty(true);
+      }
+    }
+
+    chrome.runtime.onMessage.addListener(handleMessage);
+    return () => chrome.runtime.onMessage.removeListener(handleMessage);
+  }, []);
+
+  function closeCurrentTab() {
+    if (activeTabIdRef.current != null) {
+      chrome.tabs.remove(activeTabIdRef.current);
+    }
+  }
+
   function maybeDownloadImages() {
     if (options.show_download_confirmation === 'true') {
       setDownloadConfirmationIsShown(true);
@@ -152,6 +172,7 @@ const Popup = () => {
   }
 
   async function downloadImages() {
+    setDownloadQueueIsEmpty(false);
     setDownloadIsInProgress(true);
     options.folder_name = tabName;
     await actions.downloadImages(imagesToDownload, options);
@@ -160,22 +181,56 @@ const Popup = () => {
 
   const runAfterUpdate = useRunAfterUpdate();
 
+  const selectAllButtonRef = useRef(null);
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      selectAllButtonRef.current?.click();
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, []);
+
   return html`
     <div id="filters_container">
-      <div style=${{ display: 'flex', alignItems: 'center', gap: '4px', float: 'right' }}>
-        <button
-          onClick=${() => {
-            setSelectedImages(visibleImages);
-          }}
-        >
-        <img src="/images/download.svg" />
-        </button>
-        
-        <${DownloadButton}
-          disabled=${imagesToDownload.length === 0}
-          loading=${downloadIsInProgress}
-          onClick=${maybeDownloadImages}
-        />
+      <div style=${{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        ${downloadQueueIsEmpty &&
+        html`
+          <div class="download_queue_empty_alert bg-success inverse">
+            All downloads have completed!
+          </div>
+        `}
+
+        <div style=${{ display: 'flex', alignItems: 'center', gap: '4px', marginLeft: 'auto' }}>
+          <button
+            ref=${selectAllButtonRef}
+            onClick=${() => {
+              setSelectedImages(visibleImages);
+            }}
+          >
+          <img src="/images/download.svg" />
+          </button>
+
+          <${DownloadButton}
+            disabled=${imagesToDownload.length === 0}
+            loading=${downloadIsInProgress}
+            onClick=${maybeDownloadImages}
+          />
+
+          ${downloadQueueIsEmpty &&
+          html`
+            <button
+              class="icon-button danger"
+              title="Close this tab"
+              onClick=${closeCurrentTab}
+            >
+              <svg viewBox="0 0 320 512">
+                <path
+                  d="M207.6 256l107.72-107.72c6.23-6.23 6.23-16.34 0-22.58l-25.03-25.03c-6.23-6.23-16.34-6.23-22.58 0L160 208.4 52.28 100.68c-6.23-6.23-16.34-6.23-22.58 0L4.68 125.7c-6.23 6.23-6.23 16.34 0 22.58L112.4 256 4.68 363.72c-6.23 6.23-6.23 16.34 0 22.58l25.03 25.03c6.23 6.23 16.34 6.23 22.58 0L160 303.6l107.72 107.72c6.23 6.23 16.34 6.23 22.58 0l25.03-25.03c6.23-6.23 6.23-16.34 0-22.58L207.6 256z"
+                />
+              </svg>
+            </button>
+          `}
+        </div>
       </div>
 
       ${options.show_advanced_filters === 'true' &&
