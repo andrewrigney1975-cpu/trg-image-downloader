@@ -393,6 +393,11 @@ label {
   display: inline-flex;
 }
 
+label:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 label:has(input[type='checkbox']) {
   margin-left: 3px;
 }

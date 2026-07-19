@@ -188,23 +188,31 @@ const Popup = () => {
   const selectAllButtonRef = useRef(null);
   const downloadButtonRef = useRef(null);
   useEffect(() => {
+    if (options.automation_select_all_enabled !== 'true') return;
+
     let downloadTimeoutId;
     const selectAllTimeoutId = setTimeout(() => {
       selectAllButtonRef.current?.click();
 
-      downloadTimeoutId = setTimeout(() => {
-        downloadButtonRef.current?.click();
-      }, 500);
+      if (options.automation_download_enabled === 'true') {
+        downloadTimeoutId = setTimeout(() => {
+          downloadButtonRef.current?.click();
+        }, 500);
+      }
     }, 300);
 
     return () => {
       clearTimeout(selectAllTimeoutId);
       clearTimeout(downloadTimeoutId);
     };
-  }, []);
+  }, [
+    options.automation_select_all_enabled,
+    options.automation_download_enabled,
+  ]);
 
   const closeTabButtonRef = useRef(null);
   useEffect(() => {
+    if (options.automation_close_tab_enabled !== 'true') return;
     if (!allDownloadsCompleted) return;
 
     const timeoutId = setTimeout(() => {
@@ -212,9 +220,21 @@ const Popup = () => {
     }, 1000);
 
     return () => clearTimeout(timeoutId);
-  }, [allDownloadsCompleted]);
+  }, [allDownloadsCompleted, options.automation_close_tab_enabled]);
+
+  const suppressUI = options.suppress_ui === 'true';
+  useEffect(() => {
+    document.body.classList.toggle('suppress_ui', suppressUI);
+  }, [suppressUI]);
 
   return html`
+    ${suppressUI &&
+    html`
+      <div class="suppress_ui_indicator" title="Automating image download…">
+        <img src="/images/robot.svg" width="48" height="48" alt="Robot" />
+      </div>
+    `}
+    <div style=${{ display: suppressUI ? 'none' : undefined }}>
     <div id="filters_container">
       <div style=${{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         ${allDownloadsCompleted &&
@@ -271,15 +291,18 @@ const Popup = () => {
       )}
     </div>
 
-    <${Images}
-      options=${options}
-      visibleImages=${visibleImages}
-      selectedImages=${selectedImages}
-      imagesToDownload=${imagesToDownload}
-      setSelectedImages=${setSelectedImages}
-      downloadedCount=${downloadedCount}
-      downloadTotalCount=${downloadTotalCount}
-    />
+    ${!suppressUI &&
+    html`
+      <${Images}
+        options=${options}
+        visibleImages=${visibleImages}
+        selectedImages=${selectedImages}
+        imagesToDownload=${imagesToDownload}
+        setSelectedImages=${setSelectedImages}
+        downloadedCount=${downloadedCount}
+        downloadTotalCount=${downloadTotalCount}
+      />
+    `}
 
     <div
       id="downloads_container"
@@ -350,6 +373,7 @@ const Popup = () => {
           onConfirm=${downloadImages}
         />
       `}
+    </div>
     </div>
   `;
 };
