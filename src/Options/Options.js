@@ -3,9 +3,6 @@ import html, { render, useState } from '../html.js';
 import { Checkbox } from '../components/Checkbox.js';
 import { isNotStrictEqual } from '../utils.js';
 
-import { About } from './About.js';
-import { Support } from './Support.js';
-
 const initialOptions = Object.keys(localStorage)
   .filter((key) => !key.endsWith('_default'))
   .reduce((options, key) => ({ ...options, [key]: localStorage[key] }), {});
@@ -100,16 +97,6 @@ const Options = () => {
       Image Downloader
       <small class="light">v${chrome.runtime.getManifest().version}</small>
     </h1>
-
-    <details open>
-      <summary>💭 About</summary>
-      <${About} />
-    </details>
-
-    <details open>
-      <summary>🪙 Support</summary>
-      <${Support} />
-    </details>
 
     <fieldset>
       <legend>⚙️ General options</legend>

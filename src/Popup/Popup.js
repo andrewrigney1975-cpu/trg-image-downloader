@@ -228,6 +228,12 @@ const Popup = () => {
   }, [suppressUI]);
 
   return html`
+    ${suppressUI &&
+    html`
+      <div class="suppress_ui_indicator" title="Automating image download…">
+        <img src="/images/robot.svg" width="48" height="48" alt="Robot" />
+      </div>
+    `}
     <div style=${{ display: suppressUI ? 'none' : undefined }}>
     <div id="filters_container">
       <div style=${{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -285,15 +291,18 @@ const Popup = () => {
       )}
     </div>
 
-    <${Images}
-      options=${options}
-      visibleImages=${visibleImages}
-      selectedImages=${selectedImages}
-      imagesToDownload=${imagesToDownload}
-      setSelectedImages=${setSelectedImages}
-      downloadedCount=${downloadedCount}
-      downloadTotalCount=${downloadTotalCount}
-    />
+    ${!suppressUI &&
+    html`
+      <${Images}
+        options=${options}
+        visibleImages=${visibleImages}
+        selectedImages=${selectedImages}
+        imagesToDownload=${imagesToDownload}
+        setSelectedImages=${setSelectedImages}
+        downloadedCount=${downloadedCount}
+        downloadTotalCount=${downloadTotalCount}
+      />
+    `}
 
     <div
       id="downloads_container"
