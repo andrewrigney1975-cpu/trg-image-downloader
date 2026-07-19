@@ -15,6 +15,8 @@ export const Images = ({
   selectedImages,
   imagesToDownload,
   setSelectedImages,
+  downloadedCount,
+  downloadTotalCount,
   style,
   ...props
 }) => {
@@ -64,16 +66,24 @@ export const Images = ({
 
   return html`
     <div id="images_container" style=${containerStyle} ...${props}>
-      <${Checkbox}
-        class="select_all_checkbox"
-        checked=${allImagesAreSelected}
-        indeterminate=${someImagesAreSelected && !allImagesAreSelected}
-        onChange=${({ currentTarget: { checked } }) => {
-      setSelectedImages(checked ? visibleImages : []);
-    }}
-      >
-        Select all (${imagesToDownload.length} / ${visibleImages.length})
-      <//>
+      <div class="select_all_row">
+        <${Checkbox}
+          class="select_all_checkbox"
+          checked=${allImagesAreSelected}
+          indeterminate=${someImagesAreSelected && !allImagesAreSelected}
+          onChange=${({ currentTarget: { checked } }) => {
+        setSelectedImages(checked ? visibleImages : []);
+      }}
+        >
+          Select all (${imagesToDownload.length} / ${visibleImages.length})
+        <//>
+
+        ${downloadTotalCount > 0 && html`
+          <span class="download_progress">
+            Downloaded (${downloadedCount} / ${downloadTotalCount})
+          </span>
+        `}
+      </div>
 
       ${visibleImages.map(
       (imageUrl, index) => html`

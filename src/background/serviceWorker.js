@@ -71,6 +71,12 @@ function handleDownloadChanged(delta) {
   if (!activeDownloadIds.has(delta.id)) return;
   if (!delta.state) return;
 
+  if (delta.state.current === 'complete') {
+    chrome.runtime.sendMessage({ type: 'downloadCompleted' }, () => {
+      void chrome.runtime.lastError; // Ignore: no popup listening
+    });
+  }
+
   const finished =
     delta.state.current === 'complete' || delta.state.current === 'interrupted';
   if (!finished) return;

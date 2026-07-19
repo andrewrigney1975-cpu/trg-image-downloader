@@ -16,9 +16,9 @@ export const About = () => html`
         margin: '1rem 0 0.25rem 0',
       }}
     />
-    <span style=${{ color: 'oklch(44.4% 0.011 73.639)' }}>Made by</span> @vdsabev
+    <span style=${{ color: 'var(--foreground-light)' }}>Made by</span> @vdsabev
     <br />
-    <small style=${{ color: 'oklch(55.3% 0.013 58.071)' }}>(🐕 with Ruby's help)</small>
+    <small style=${{ color: 'var(--foreground-light)' }}>(🐕 with Ruby's help)</small>
   </a>
 
   <p style=${{ margin: '1em 0' }}>

@@ -56,6 +56,11 @@
   --transition-opacity: opacity 200ms var(--transition-timing-linear); /* Timing opacity looks weird */
   --transition-transform: transform 200ms var(--transition-timing-ease-out);
 
+  /* Surfaces (flip between themes; neutral-lightest/darkest stay constant
+     since they're also used as fixed white/black e.g. button text, checkmarks) */
+  --surface: var(--neutral-lightest);
+  --surface-alt: var(--neutral-lighter);
+
   /* Misc */
   --border-color: var(--neutral-transparent-5);
   --image-background: var(--neutral-light);
@@ -64,8 +69,44 @@
   --input-background: var(--neutral-transparent-5);
 }
 
+@media (prefers-color-scheme: dark) {
+  :root {
+    --neutral: hsl(300, 6%, 45%);
+    --neutral-light: hsl(300, 6%, 30%);
+
+    --neutral-transparent-5: hsla(0, 0%, 100%, 6%);
+    --neutral-transparent-15: hsla(0, 0%, 100%, 15%);
+    --neutral-transparent-20: hsla(0, 0%, 100%, 20%);
+
+    --accent: hsl(213, 90%, 62%);
+    --accent-dark: hsl(213, 90%, 72%);
+
+    --success-light: hsl(145, 55%, 55%);
+    --success: hsl(145, 55%, 48%);
+
+    --warning-light: hsl(37, 90%, 62%);
+    --warning: hsl(37, 90%, 54%);
+
+    --danger-light: hsl(6, 78%, 65%);
+    --danger: hsl(6, 78%, 58%);
+
+    --foreground: hsl(0, 0%, 88%);
+    --foreground-light: hsl(0, 0%, 55%);
+
+    --elevation-1: 0 2px 4px hsla(0, 0%, 0%, 45%);
+    --elevation-2: 0 5px 14px hsla(0, 0%, 0%, 40%),
+      0 3px 5px hsla(0, 0%, 0%, 45%);
+
+    --surface: hsl(300, 6%, 14%);
+    --surface-alt: hsl(300, 6%, 9%);
+
+    --image-background: var(--neutral-light);
+  }
+}
+
 html {
   box-sizing: border-box;
+  color-scheme: light dark;
 }
 
 *,
@@ -79,6 +120,8 @@ body {
   min-height: 600px;
   font: 13px/1.5em 'Lucida Grande', Arial, sans-serif;
   color: var(--foreground);
+  background-color: var(--surface-alt);
+  transition: var(--transition-background), var(--transition-color);
 }
 
 /* https://stackoverflow.com/questions/11243337/a-taller-than-its-img-child */
@@ -275,7 +318,7 @@ input[type='button'].accent:active {
 
 input[type='button'].accent.ghost {
   border: 2px solid var(--accent);
-  background: var(--neutral-lightest);
+  background: var(--surface);
   color: var(--accent);
 }
 
@@ -293,7 +336,7 @@ input[type='button'].success:active {
 
 input[type='button'].success.ghost {
   border: 2px solid var(--success);
-  background: var(--neutral-lightest);
+  background: var(--surface);
   color: var(--success);
 }
 
@@ -311,7 +354,7 @@ input[type='button'].warning:active {
 
 input[type='button'].warning.ghost {
   border: 2px solid var(--warning);
-  background: var(--neutral-lightest);
+  background: var(--surface);
   color: var(--warning);
 }
 
@@ -329,7 +372,7 @@ input[type='button'].danger:active {
 
 input[type='button'].danger.ghost {
   border: 2px solid var(--danger);
-  background: var(--neutral-lightest);
+  background: var(--surface);
   color: var(--danger);
 }
 
@@ -341,7 +384,7 @@ input[type='button'].neutral {
 
 input[type='button'].neutral.ghost {
   border: 2px solid var(--neutral-transparent-20);
-  background: var(--neutral-lightest);
+  background: var(--surface);
   color: var(--foreground);
 }
 
