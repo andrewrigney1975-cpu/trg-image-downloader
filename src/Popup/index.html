@@ -19,6 +19,14 @@
         min-height: 100vh;
       }
 
+      body.suppress_ui {
+        min-width: 0;
+        min-height: 0;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+      }
+
       .grid {
         width: 100%;
         border-collapse: collapse;

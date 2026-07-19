@@ -27,6 +27,11 @@ const defaults = {
   columns: 2,
   image_min_width: 50,
   image_max_width: 200,
+  // Automation
+  automation_select_all_enabled: true,
+  automation_download_enabled: true,
+  automation_close_tab_enabled: true,
+  suppress_ui: false,
 };
 
 Object.keys(defaults).forEach((option) => {

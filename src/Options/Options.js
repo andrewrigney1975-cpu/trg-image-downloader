@@ -41,11 +41,28 @@ const useNotifications = (initialNotifications = []) => {
   return { notifications, addNotification };
 };
 
+const automationKeys = [
+  'automation_select_all_enabled',
+  'automation_download_enabled',
+  'automation_close_tab_enabled',
+];
+
 const Options = () => {
   const [options, setOptions] = useState(initialOptions);
 
+  const allAutomationsEnabled = automationKeys.every(
+    (key) => options[key] === 'true'
+  );
+
   const setCheckboxOption = (key) => ({ currentTarget: { checked } }) => {
-    setOptions((options) => ({ ...options, [key]: checked.toString() }));
+    setOptions((options) => {
+      const newOptions = { ...options, [key]: checked.toString() };
+      // Suppressing the UI requires every automation step to run on its own
+      if (!checked && automationKeys.includes(key)) {
+        newOptions.suppress_ui = 'false';
+      }
+      return newOptions;
+    });
   };
 
   const setValueOption = (key) => ({ currentTarget: { value } }) => {
@@ -207,6 +224,52 @@ const Options = () => {
           </td>
         </tr>
       </table>
+    </fieldset>
+
+    <fieldset>
+      <legend>🤖 Automation</legend>
+
+      <${Checkbox}
+        id="automation_select_all_enabled_checkbox"
+        title="Automatically selects all images shortly after they're found"
+        checked="${options.automation_select_all_enabled === 'true'}"
+        onChange=${setCheckboxOption('automation_select_all_enabled')}
+      >
+        <span>Auto-select all images</span>
+      <//>
+
+      <br />
+      <${Checkbox}
+        id="automation_download_enabled_checkbox"
+        title="Automatically starts the download shortly after images are selected"
+        checked="${options.automation_download_enabled === 'true'}"
+        onChange=${setCheckboxOption('automation_download_enabled')}
+      >
+        <span>Auto-start download</span>
+      <//>
+
+      <br />
+      <${Checkbox}
+        id="automation_close_tab_enabled_checkbox"
+        title="Automatically closes this tab shortly after all downloads complete"
+        checked="${options.automation_close_tab_enabled === 'true'}"
+        onChange=${setCheckboxOption('automation_close_tab_enabled')}
+      >
+        <span>Auto-close tab when done</span>
+      <//>
+
+      <br />
+      <${Checkbox}
+        id="suppress_ui_checkbox"
+        title=${allAutomationsEnabled
+          ? 'Runs the selection, download, and close steps without showing the popup UI'
+          : 'Enable all three automation steps above to unlock this option'}
+        disabled=${!allAutomationsEnabled}
+        checked="${options.suppress_ui === 'true'}"
+        onChange=${setCheckboxOption('suppress_ui')}
+      >
+        <span>Suppress UI</span>
+      <//>
     </fieldset>
 
     <div style=${{ display: 'flex', gap: '4px' }}>
