@@ -145,14 +145,13 @@ const Popup = () => {
   const [downloadConfirmationIsShown, setDownloadConfirmationIsShown] =
     useState(false);
 
-  const [downloadQueueIsEmpty, setDownloadQueueIsEmpty] = useState(false);
   const [downloadedCount, setDownloadedCount] = useState(0);
   const [downloadTotalCount, setDownloadTotalCount] = useState(0);
+  const allDownloadsCompleted =
+    downloadTotalCount > 0 && downloadedCount === downloadTotalCount;
   useEffect(() => {
     function handleMessage(message) {
-      if (message && message.type === 'downloadQueueEmpty') {
-        setDownloadQueueIsEmpty(true);
-      } else if (message && message.type === 'downloadCompleted') {
+      if (message && message.type === 'downloadCompleted') {
         setDownloadedCount((downloadedCount) => downloadedCount + 1);
       }
     }
@@ -176,7 +175,6 @@ const Popup = () => {
   }
 
   async function downloadImages() {
-    setDownloadQueueIsEmpty(false);
     setDownloadedCount(0);
     setDownloadTotalCount(imagesToDownload.length);
     setDownloadIsInProgress(true);
@@ -199,7 +197,7 @@ const Popup = () => {
   return html`
     <div id="filters_container">
       <div style=${{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        ${downloadQueueIsEmpty &&
+        ${allDownloadsCompleted &&
         html`
           <div class="download_queue_empty_alert bg-success inverse">
             All downloads have completed!
@@ -222,7 +220,7 @@ const Popup = () => {
             onClick=${maybeDownloadImages}
           />
 
-          ${downloadQueueIsEmpty &&
+          ${allDownloadsCompleted &&
           html`
             <button
               class="icon-button danger"

@@ -82,12 +82,6 @@ function handleDownloadChanged(delta) {
   if (!finished) return;
 
   activeDownloadIds.delete(delta.id);
-  if (activeDownloadIds.size === 0) {
-    // Notify the popup, if it's open, that every queued download has settled.
-    chrome.runtime.sendMessage({ type: 'downloadQueueEmpty' }, () => {
-      void chrome.runtime.lastError; // Ignore: no popup listening
-    });
-  }
 }
 
 // https://developer.chrome.com/docs/extensions/reference/downloads/#event-onDeterminingFilename
