@@ -186,12 +186,21 @@ const Popup = () => {
   const runAfterUpdate = useRunAfterUpdate();
 
   const selectAllButtonRef = useRef(null);
+  const downloadButtonRef = useRef(null);
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
+    let downloadTimeoutId;
+    const selectAllTimeoutId = setTimeout(() => {
       selectAllButtonRef.current?.click();
+
+      downloadTimeoutId = setTimeout(() => {
+        downloadButtonRef.current?.click();
+      }, 500);
     }, 300);
 
-    return () => clearTimeout(timeoutId);
+    return () => {
+      clearTimeout(selectAllTimeoutId);
+      clearTimeout(downloadTimeoutId);
+    };
   }, []);
 
   return html`
@@ -215,6 +224,7 @@ const Popup = () => {
           </button>
 
           <${DownloadButton}
+            ref=${downloadButtonRef}
             disabled=${imagesToDownload.length === 0}
             loading=${downloadIsInProgress}
             onClick=${maybeDownloadImages}

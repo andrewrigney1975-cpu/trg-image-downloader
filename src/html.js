@@ -13,5 +13,8 @@ export const useMemo = React.useMemo;
 export const useRef = React.useRef;
 export const useState = React.useState;
 
+// React APIs
+export const forwardRef = React.forwardRef;
+
 // React DOM
 export const render = ReactDOM.render;

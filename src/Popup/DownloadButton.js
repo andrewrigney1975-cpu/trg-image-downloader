@@ -1,7 +1,7 @@
-import html from '../html.js';
+import html, { forwardRef } from '../html.js';
 
 // TODO: Implement loading animation
-export const DownloadButton = ({ disabled, loading, ...props }) => {
+export const DownloadButton = forwardRef(({ disabled, loading, ...props }, ref) => {
   const tooltipText = disabled
     ? 'Select some images to download first'
     : loading
@@ -10,6 +10,7 @@ export const DownloadButton = ({ disabled, loading, ...props }) => {
 
   return html`
     <input
+      ref=${ref}
       type="button"
       class="accent ${loading ? 'loading' : ''}"
       value=${loading ? '•••' : 'Download'}
@@ -18,4 +19,4 @@ export const DownloadButton = ({ disabled, loading, ...props }) => {
       ...${props}
     />
   `;
-};
+});
