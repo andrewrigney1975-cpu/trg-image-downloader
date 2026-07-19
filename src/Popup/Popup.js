@@ -203,6 +203,17 @@ const Popup = () => {
     };
   }, []);
 
+  const closeTabButtonRef = useRef(null);
+  useEffect(() => {
+    if (!allDownloadsCompleted) return;
+
+    const timeoutId = setTimeout(() => {
+      closeTabButtonRef.current?.click();
+    }, 1000);
+
+    return () => clearTimeout(timeoutId);
+  }, [allDownloadsCompleted]);
+
   return html`
     <div id="filters_container">
       <div style=${{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -233,6 +244,7 @@ const Popup = () => {
           ${allDownloadsCompleted &&
           html`
             <button
+              ref=${closeTabButtonRef}
               class="icon-button danger"
               title="Close this tab"
               onClick=${closeCurrentTab}
