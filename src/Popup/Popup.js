@@ -20,6 +20,41 @@ import { UrlFilterMode } from './UrlFilterMode.js';
 const initialOptions = localStorage;
 var tabName = '';
 
+function formatFolderExistsMessage(folderName, response) {
+  const count = response.matches.length;
+  return `A folder named "${folderName}" already exists (${count} match${count === 1 ? '' : 'es'}).`;
+}
+
+/**
+ * Fires a native `alert()` immediately if a folder named `folderName` already exists, checked via
+ * enfyl Explorer's Search Index (see serviceWorker.js). Used once at popup load, against the
+ * tab-derived default subfolder name - the debounced inline warning above (options.folder_name)
+ * covers the case where the user then changes it. Silently no-ops if the native host isn't
+ * installed/registered - that's an expected outcome for most users, not an error worth alerting on.
+ */
+function warnIfFolderExists(folderName) {
+  if (!folderName) return;
+
+  console.log('[SearchIndex] warnIfFolderExists: checking', folderName);
+
+  chrome.runtime.sendMessage(
+    { type: 'checkFolderExists', folderName },
+    (response) => {
+      if (chrome.runtime.lastError) {
+        console.log(
+          '[SearchIndex] warnIfFolderExists: sendMessage lastError:',
+          chrome.runtime.lastError.message,
+        );
+        return;
+      }
+      console.log('[SearchIndex] warnIfFolderExists: response', response);
+      if (response && response.exists) {
+        alert(formatFolderExistsMessage(folderName, response));
+      }
+    },
+  );
+}
+
 const Popup = () => {
   const [options, setOptions] = useState(initialOptions);
 
@@ -40,6 +75,7 @@ const Popup = () => {
         (activeTabs) => {
           tabName = removeSpecialCharacters(activeTabs[0].title);
           activeTabIdRef.current = activeTabs[0].id;
+          warnIfFolderExists(tabName);
           chrome.scripting
             .executeScript({
               target: { tabId: activeTabs[0].id, allFrames: true },
@@ -144,6 +180,48 @@ const Popup = () => {
 
   const [downloadConfirmationIsShown, setDownloadConfirmationIsShown] =
     useState(false);
+
+  // Checks the subfolder name against enfyl Explorer's local Search Index via Native Messaging
+  // (see serviceWorker.js), debounced so it's not fired on every keystroke. Silently shows nothing
+  // if the native host isn't installed/registered on this machine - that's an expected outcome for
+  // most users, not an error worth surfacing.
+  const [folderExistsWarning, setFolderExistsWarning] = useState(null);
+  useEffect(() => {
+    const folderName = options.folder_name;
+    if (!folderName) {
+      setFolderExistsWarning(null);
+      return;
+    }
+
+    let cancelled = false;
+    const timeoutId = setTimeout(() => {
+      console.log('[SearchIndex] inline check: checking', folderName);
+      chrome.runtime.sendMessage(
+        { type: 'checkFolderExists', folderName },
+        (response) => {
+          if (chrome.runtime.lastError) {
+            console.log(
+              '[SearchIndex] inline check: sendMessage lastError:',
+              chrome.runtime.lastError.message,
+            );
+            return;
+          }
+          console.log('[SearchIndex] inline check: response', response);
+          if (cancelled || !response) return;
+          setFolderExistsWarning(
+            response && response.exists
+              ? formatFolderExistsMessage(folderName, response)
+              : null,
+          );
+        },
+      );
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
+  }, [options.folder_name]);
 
   const [downloadedCount, setDownloadedCount] = useState(0);
   const [downloadTotalCount, setDownloadTotalCount] = useState(0);
@@ -333,6 +411,16 @@ const Popup = () => {
           }));
         }}
       />
+
+      ${folderExistsWarning &&
+      html`
+        <p
+          class="danger"
+          style=${{ gridColumn: '1 / -1', margin: '4px 0 0', fontSize: '0.9em' }}
+        >
+          ${folderExistsWarning}
+        </p>
+      `}
 
       ${options.show_file_renaming === 'true' &&
       html`

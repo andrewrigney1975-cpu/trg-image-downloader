@@ -14,8 +14,50 @@ chrome.runtime.onInstalled.addListener((details) => {
 const tasks = new Set();
 
 chrome.runtime.onMessage.addListener(startDownload);
+chrome.runtime.onMessage.addListener(handleCheckFolderExists);
 chrome.downloads.onDeterminingFilename.addListener(suggestNewFilename);
 chrome.downloads.onChanged.addListener(handleDownloadChanged);
+
+// Native Messaging host id registered by enfyl Explorer (F:/Src/winui3-fileexplorer) - Control
+// Centre > Search Index > Browser Integration. Not installed/registered on every machine this
+// extension runs on, so a missing-host error (via chrome.runtime.lastError) is an expected,
+// non-fatal outcome, not a bug - the popup just shows no folder-exists warning in that case.
+const SEARCH_INDEX_NATIVE_HOST = 'com.enfylexplorer.searchindex';
+
+/**
+ * Relays a "does a folder with this name already exist?" check to enfyl Explorer's local search
+ * index via Native Messaging. Routed through the service worker (rather than calling
+ * chrome.runtime.sendNativeMessage directly from the popup) to keep every native-messaging call
+ * site in one place, matching how downloads are already centralized here.
+ */
+function handleCheckFolderExists(
+  /** @type {any} */ message,
+  /** @type {chrome.runtime.MessageSender} */ sender,
+  /** @type {(response?: any) => void} */ sendResponse
+) {
+  if (!(message && message.type === 'checkFolderExists')) return;
+
+  console.log('[SearchIndex] handleCheckFolderExists: received', message);
+
+  chrome.runtime.sendNativeMessage(
+    SEARCH_INDEX_NATIVE_HOST,
+    { folderName: message.folderName },
+    (response) => {
+      if (chrome.runtime.lastError) {
+        console.log(
+          '[SearchIndex] sendNativeMessage lastError:',
+          chrome.runtime.lastError.message,
+        );
+        sendResponse({ error: chrome.runtime.lastError.message });
+        return;
+      }
+      console.log('[SearchIndex] sendNativeMessage response:', response);
+      sendResponse(response);
+    }
+  );
+
+  return true; // Keeps the message channel open until sendResponse is called
+}
 
 // Download ids started by this extension that haven't finished (or failed) yet.
 /** @type {Set<number>} */
