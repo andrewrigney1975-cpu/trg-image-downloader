@@ -26,13 +26,13 @@ function formatFolderExistsMessage(folderName, response) {
 }
 
 /**
- * Fires a native `alert()` immediately if a folder named `folderName` already exists, checked via
- * enfyl Explorer's Search Index (see serviceWorker.js). Used once at popup load, against the
- * tab-derived default subfolder name - the debounced inline warning above (options.folder_name)
+ * Checks whether a folder named `folderName` already exists, via enfyl Explorer's Search Index
+ * (see serviceWorker.js), and reports it through `onFolderExists`. Used once at popup load, against
+ * the tab-derived default subfolder name - the debounced inline check further down (options.folder_name)
  * covers the case where the user then changes it. Silently no-ops if the native host isn't
- * installed/registered - that's an expected outcome for most users, not an error worth alerting on.
+ * installed/registered - that's an expected outcome for most users, not an error worth surfacing.
  */
-function warnIfFolderExists(folderName) {
+function warnIfFolderExists(folderName, onFolderExists) {
   if (!folderName) return;
 
   console.log('[SearchIndex] warnIfFolderExists: checking', folderName);
@@ -49,7 +49,7 @@ function warnIfFolderExists(folderName) {
       }
       console.log('[SearchIndex] warnIfFolderExists: response', response);
       if (response && response.exists) {
-        alert(formatFolderExistsMessage(folderName, response));
+        onFolderExists(formatFolderExistsMessage(folderName, response));
       }
     },
   );
@@ -67,6 +67,13 @@ const Popup = () => {
   const [selectedImages, setSelectedImages] = useState([]);
   const [visibleImages, setVisibleImages] = useState([]);
   const activeTabIdRef = useRef(null);
+
+  // Checks the subfolder name against enfyl Explorer's local Search Index via Native Messaging
+  // (see serviceWorker.js), debounced so it's not fired on every keystroke. Silently shows nothing
+  // if the native host isn't installed/registered on this machine - that's an expected outcome for
+  // most users, not an error worth surfacing.
+  const [folderExistsWarning, setFolderExistsWarning] = useState(null);
+
   useEffect(() => {
     // Get images on the page
     chrome.windows.getCurrent((currentWindow) => {
@@ -75,7 +82,7 @@ const Popup = () => {
         (activeTabs) => {
           tabName = removeSpecialCharacters(activeTabs[0].title);
           activeTabIdRef.current = activeTabs[0].id;
-          warnIfFolderExists(tabName);
+          warnIfFolderExists(tabName, setFolderExistsWarning);
           chrome.scripting
             .executeScript({
               target: { tabId: activeTabs[0].id, allFrames: true },
@@ -181,11 +188,6 @@ const Popup = () => {
   const [downloadConfirmationIsShown, setDownloadConfirmationIsShown] =
     useState(false);
 
-  // Checks the subfolder name against enfyl Explorer's local Search Index via Native Messaging
-  // (see serviceWorker.js), debounced so it's not fired on every keystroke. Silently shows nothing
-  // if the native host isn't installed/registered on this machine - that's an expected outcome for
-  // most users, not an error worth surfacing.
-  const [folderExistsWarning, setFolderExistsWarning] = useState(null);
   useEffect(() => {
     const folderName = options.folder_name;
     if (!folderName) {
@@ -339,12 +341,12 @@ const Popup = () => {
             onClick=${maybeDownloadImages}
           />
 
-          ${allDownloadsCompleted &&
+          ${(allDownloadsCompleted || folderExistsWarning) &&
           html`
             <button
               ref=${closeTabButtonRef}
               class="icon-button danger"
-              title="Close this tab"
+              title=${folderExistsWarning || 'Close this tab'}
               onClick=${closeCurrentTab}
             >
               <svg viewBox="0 0 320 512">
