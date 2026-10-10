@@ -18,41 +18,10 @@ import { Images } from './Images.js';
 import { UrlFilterMode } from './UrlFilterMode.js';
 
 const initialOptions = localStorage;
-var tabName = '';
 
 function formatFolderExistsMessage(folderName, response) {
   const count = response.matches.length;
   return `A folder named "${folderName}" already exists (${count} match${count === 1 ? '' : 'es'}).`;
-}
-
-/**
- * Checks whether a folder named `folderName` already exists, via enfyl Explorer's Search Index
- * (see serviceWorker.js), and reports it through `onFolderExists`. Used once at popup load, against
- * the tab-derived default subfolder name - the debounced inline check further down (options.folder_name)
- * covers the case where the user then changes it. Silently no-ops if the native host isn't
- * installed/registered - that's an expected outcome for most users, not an error worth surfacing.
- */
-function warnIfFolderExists(folderName, onFolderExists) {
-  if (!folderName) return;
-
-  console.log('[SearchIndex] warnIfFolderExists: checking', folderName);
-
-  chrome.runtime.sendMessage(
-    { type: 'checkFolderExists', folderName },
-    (response) => {
-      if (chrome.runtime.lastError) {
-        console.log(
-          '[SearchIndex] warnIfFolderExists: sendMessage lastError:',
-          chrome.runtime.lastError.message,
-        );
-        return;
-      }
-      console.log('[SearchIndex] warnIfFolderExists: response', response);
-      if (response && response.exists) {
-        onFolderExists(formatFolderExistsMessage(folderName, response));
-      }
-    },
-  );
 }
 
 const Popup = () => {
@@ -68,6 +37,11 @@ const Popup = () => {
   const [visibleImages, setVisibleImages] = useState([]);
   const activeTabIdRef = useRef(null);
 
+  // The subfolder to download into for this popup session. Seeded from the active tab's title and
+  // editable by the user. Deliberately not persisted in options/localStorage, so a stale name from
+  // a previous page can never leak into this page's download or folder-exists check.
+  const [folderName, setFolderName] = useState('');
+
   // Checks the subfolder name against enfyl Explorer's local Search Index via Native Messaging
   // (see serviceWorker.js), debounced so it's not fired on every keystroke. Silently shows nothing
   // if the native host isn't installed/registered on this machine - that's an expected outcome for
@@ -80,9 +54,8 @@ const Popup = () => {
       chrome.tabs.query(
         { active: true, windowId: currentWindow.id },
         (activeTabs) => {
-          tabName = removeSpecialCharacters(activeTabs[0].title);
+          setFolderName(removeSpecialCharacters(activeTabs[0].title));
           activeTabIdRef.current = activeTabs[0].id;
-          warnIfFolderExists(tabName, setFolderExistsWarning);
           chrome.scripting
             .executeScript({
               target: { tabId: activeTabs[0].id, allFrames: true },
@@ -189,7 +162,6 @@ const Popup = () => {
     useState(false);
 
   useEffect(() => {
-    const folderName = options.folder_name;
     if (!folderName) {
       setFolderExistsWarning(null);
       return;
@@ -223,7 +195,7 @@ const Popup = () => {
       cancelled = true;
       clearTimeout(timeoutId);
     };
-  }, [options.folder_name]);
+  }, [folderName]);
 
   const [downloadedCount, setDownloadedCount] = useState(0);
   const [downloadTotalCount, setDownloadTotalCount] = useState(0);
@@ -258,8 +230,10 @@ const Popup = () => {
     setDownloadedCount(0);
     setDownloadTotalCount(imagesToDownload.length);
     setDownloadIsInProgress(true);
-    options.folder_name = tabName;
-    await actions.downloadImages(imagesToDownload, options);
+    await actions.downloadImages(imagesToDownload, {
+      ...options,
+      folder_name: folderName,
+    });
     setDownloadIsInProgress(false);
   }
 
@@ -397,7 +371,7 @@ const Popup = () => {
         id="myInput"
         placeholder="Save to subfolder"
         title="Set the name of the subfolder you want to download the images to."
-        value=${tabName}
+        value=${folderName}
         onChange=${({ currentTarget: input }) => {
           const savedSelectionStart = removeSpecialCharacters(
             input.value.slice(0, input.selectionStart),
@@ -407,10 +381,7 @@ const Popup = () => {
             input.selectionStart = input.selectionEnd = savedSelectionStart;
           });
 
-          setOptions((options) => ({
-            ...options,
-            folder_name: removeSpecialCharacters(input.value),
-          }));
+          setFolderName(removeSpecialCharacters(input.value));
         }}
       />
 
